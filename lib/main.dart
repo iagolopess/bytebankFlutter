@@ -8,28 +8,51 @@ class BytebankApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         home: Scaffold(
-      body: FormularioTransferencia(),
+      body: ListaTransferencia(),
     ));
   }
 }
 
 // Tela onde tem a lista com as transferencias
-class ListaTransferencia extends StatelessWidget {
+class ListaTransferencia extends StatefulWidget {
+  // Lista que irá armazenar as transferências
+  final List<Transferencia> _transferencias = [];
+
+  @override
+  State<StatefulWidget> createState() {
+    // TODO: implement createState
+    return ListaTransferenciaState();
+  }
+}
+
+class ListaTransferenciaState extends State<ListaTransferencia> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text("Transferências"),
       ),
-      body: Column(
-        children: [
-          ItemTransfrencia(Transferencia(100.00, 1000)),
-          ItemTransfrencia(Transferencia(138.00, 1025)),
-          ItemTransfrencia(Transferencia(289.25, 2103)),
-        ],
+      body: ListView.builder(
+        itemCount: widget._transferencias.length,
+        itemBuilder: (context, indice) {
+          final transferencia = widget._transferencias[indice];
+          return ItemTransfrencia(transferencia);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         child: Icon(Icons.add),
+        onPressed: () {
+          //Controla o fluxo de navegação entre as telas
+          final Future<Transferencia> future =
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+            return FormularioTransferencia();
+          }));
+          future.then((transferenciaRecebida) {
+            debugPrint('Chegou no then do future');
+            debugPrint('$transferenciaRecebida');
+            setState(() => widget._transferencias.add(transferenciaRecebida));
+          });
+        },
       ),
     );
   }
@@ -46,8 +69,8 @@ class ItemTransfrencia extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: Icon(Icons.monetization_on),
-        title: Text(_transferencia.valor.toStringAsFixed(2)),
-        subtitle: Text(_transferencia.numeroConta.toStringAsFixed(2)),
+        title: Text(" R\$ " + _transferencia.valor.toStringAsFixed(2)),
+        subtitle: Text("Conta: " + _transferencia.numeroConta.toString()),
       ),
     );
   }
@@ -62,7 +85,7 @@ class Transferencia {
 
   @override
   String toString() {
-    return 'Transferencia{valor: ${valor.toStringAsFixed(2)}, numeroConta: $numeroConta}';
+    return 'Transferencia{valor: $valor, numeroConta: $numeroConta}';
   }
 }
 
@@ -80,10 +103,11 @@ class FormularioTransferencia extends StatelessWidget {
       body: Column(
         children: <Widget>[
           Editor(
-              controlador: _controladorCampoNumeroConta,
-              rotulo: 'Número da Conta',
-              dica: '0000',
-              icone: Icons.account_balance),
+            controlador: _controladorCampoNumeroConta,
+            rotulo: 'Número da Conta',
+            dica: '0000',
+            icone: Icons.account_balance,
+          ),
           Editor(
               controlador: _controladorCampoValor,
               rotulo: 'Valor',
@@ -91,20 +115,22 @@ class FormularioTransferencia extends StatelessWidget {
               icone: Icons.monetization_on),
           RaisedButton(
             child: Text('Confirmar'),
-            onPressed: () => _criaTransferencia(),
+            onPressed: () => _criaTransferencia(context),
           )
         ],
       ),
     );
   }
 
-  void _criaTransferencia() {
+  void _criaTransferencia(BuildContext context) {
     final int numeroConta = int.tryParse(_controladorCampoNumeroConta.text);
     final double valor = double.tryParse(_controladorCampoValor.text);
 
     if (numeroConta != null && valor != null) {
       final transferenciaCriada = Transferencia(valor, numeroConta);
+      debugPrint('Criando transferência');
       debugPrint('$transferenciaCriada');
+      Navigator.pop(context, transferenciaCriada);
     }
   }
 }
